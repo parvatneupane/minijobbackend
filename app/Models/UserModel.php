@@ -38,11 +38,11 @@ class UserModel extends Authenticatable
 
   public function freelancerProfile()
 {
-    return $this->hasOne(FreelancerProfile::class, 'user_id');
+    return $this->hasOne(FreeLancerProfileModel::class, 'user_id');
 }
 
 public function clientProfile()
 {
-    return $this->hasOne(ClientProfile::class, 'user_id');
+    return $this->hasOne(ClientProfileModel::class, 'user_id');
 }
 }
