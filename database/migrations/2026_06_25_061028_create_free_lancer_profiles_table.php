@@ -12,30 +12,53 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('user_id')
-                ->constrained('users')
+                ->constrained()
                 ->cascadeOnDelete();
 
+            // Professional info
             $table->string('title')->nullable();
-            $table->string('profile_image')->nullable();
             $table->text('bio')->nullable();
-            $table->integer('experience_years')->default(0);
-            $table->decimal('hourly_rate', 10, 2)->default(0);
-            $table->string('location')->nullable();
+
+            $table->integer('experience_years')
+                ->default(0);
+
+            $table->decimal('hourly_rate', 10, 2)
+                ->default(0);
+
             $table->text('skills')->nullable();
-            $table->decimal('rating', 3, 2)->default(0);
+
+            // Location
+            $table->string('location')->nullable();
+
+            // Availability
             $table->enum('availability', [
                 'available',
                 'busy',
                 'unavailable'
             ])->default('available');
 
+            // Portfolio
+            $table->string('portfolio_url')
+                ->nullable();
+
+            // Statistics
+            $table->decimal('rating', 3, 2)
+                ->default(0.00);
+
+            $table->integer('completed_jobs')
+                ->default(0);
+
+            // Profile status
             $table->enum('status', [
-                'pending',
+                'inactive',
                 'active',
                 'blocked'
-            ])->default('pending');
+            ])->default('active');
 
             $table->timestamps();
+
+            // One profile per freelancer
+            $table->unique('user_id');
         });
     }
 

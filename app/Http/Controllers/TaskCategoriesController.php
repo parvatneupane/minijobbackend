@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\TaskCategoryModel;
+use App\Models\TaskCategoriesModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class TaskCategoryController extends Controller
+class TaskCategoriesController extends Controller
 {
     // Get all categories
     public function index()
     {
-        $categories = TaskCategoryModel::all();
+        $categories = TaskCategoriesModel::all();
 
         return response()->json([
             'success' => true,
@@ -36,7 +36,7 @@ class TaskCategoryController extends Controller
             ], 422);
         }
 
-        $category = TaskCategoryModel::create([
+        $category = TaskCategoriesModel::create([
             'name' => $request->name,
             'status' => $request->status ?? 0
         ]);
@@ -51,7 +51,7 @@ class TaskCategoryController extends Controller
     // Get single category
     public function show($id)
     {
-        $category = TaskCategoryModel::find($id);
+        $category = TaskCategoriesModel::find($id);
 
         if (!$category) {
             return response()->json([
@@ -69,7 +69,7 @@ class TaskCategoryController extends Controller
     // Update category
     public function update(Request $request, $id)
     {
-        $category = TaskCategoryModel::find($id);
+        $category = TaskCategoriesModel::find($id);
 
         if (!$category) {
             return response()->json([
@@ -107,7 +107,7 @@ class TaskCategoryController extends Controller
     // Delete category
     public function destroy($id)
     {
-        $category = TaskCategoryModel::find($id);
+        $category = TaskCategoriesModel::find($id);
 
         if (!$category) {
             return response()->json([

@@ -13,9 +13,10 @@ class ProposalModel extends Model
 
     protected $fillable = [
         'task_id',
-        'free_lancer_id',
+        'user_id',
         'description',
-        'proposal_cost',
+        'takes_time',
+        'achievement',
         'status'
     ];
 
@@ -34,11 +35,11 @@ class ProposalModel extends Model
         );
     }
 
-    public function freelancer()
+       public function user()
     {
         return $this->belongsTo(
-            FreeLancerProfileModel::class,
-            'free_lancer_id'
+            UserModel::class,
+            'user_id'
         );
     }
 }

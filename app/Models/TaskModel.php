@@ -12,7 +12,7 @@ class TaskModel extends Model
     protected $table = 'tasks';
 
     protected $fillable = [
-        'client_id',
+        'user_id',
         'category_id',
         'title',
         'description',
@@ -31,18 +31,18 @@ class TaskModel extends Model
         ];
     }
 
-    public function client()
+    public function user()
     {
         return $this->belongsTo(
-            ClientProfileModel::class,
-            'client_id'
+            UserModel::class,
+            'user_id'
         );
     }
 
     public function category()
     {
         return $this->belongsTo(
-            TaskCategoryModel::class,
+            TaskCategoriesModel::class,
             'category_id'
         );
     }

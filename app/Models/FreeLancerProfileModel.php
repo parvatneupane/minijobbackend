@@ -14,28 +14,59 @@ class FreeLancerProfileModel extends Model
     protected $fillable = [
         'user_id',
         'title',
-        'profile_image',
         'bio',
         'experience_years',
         'hourly_rate',
-        'location',
         'skills',
-        'rating',
+        'location',
         'availability',
+        'portfolio_url',
+        'rating',
+        'completed_jobs',
         'status',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'experience_years' => 'integer',
-            'hourly_rate' => 'decimal:2',
-            'rating' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'hourly_rate' => 'decimal:2',
+        'rating' => 'decimal:2',
+        'experience_years' => 'integer',
+        'completed_jobs' => 'integer',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function user()
     {
-        return $this->belongsTo(UserModel::class, 'user_id');
+        return $this->belongsTo(UserModel::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function isAvailable()
+    {
+        return $this->availability === 'available';
+    }
+
+    public function isBusy()
+    {
+        return $this->availability === 'busy';
+    }
+
+    public function isActive()
+    {
+        return $this->status === 'active';
+    }
+
+    public function isBlocked()
+    {
+        return $this->status === 'blocked';
     }
 }

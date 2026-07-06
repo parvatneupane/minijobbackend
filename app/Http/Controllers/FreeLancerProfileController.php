@@ -2,157 +2,404 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\FreeLancerProfileModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class FreeLancerProfileController extends Controller
 {
-    // Get all freelancer profiles
+
+    // GET ALL
     public function index()
     {
-        $profiles = FreeLancerProfileModel::with('user')->get();
+
+        $profiles =
+            FreeLancerProfileModel::with('user')
+                ->get();
 
         return response()->json([
+
             'success' => true,
-            'message' => 'Profiles fetched successfully',
-            'data' => $profiles
+
+            'message' =>
+                'Freelancer profiles fetched successfully',
+
+            'data' =>
+                $profiles
+
         ]);
+
     }
 
-    // Create profile
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'title' => 'nullable|string|max:255',
-            'profile_image' => 'nullable|string',
-            'bio' => 'nullable|string',
-            'experience_years' => 'nullable|integer',
-            'hourly_rate' => 'nullable|numeric',
-            'location' => 'nullable|string',
-            'skills' => 'nullable|string',
-            'availability' =>
-                'nullable|in:available,busy,unavailable',
-        ]);
 
-        if ($validator->fails()) {
+
+
+    // CREATE PROFILE
+    public function store(Request $request ) 
+    {
+
+        $validator =
+            Validator::make(
+
+                $request->all(),
+
+                [
+
+                    'title' =>
+                        'nullable|string|max:255',
+
+                    'bio' =>
+                        'nullable|string',
+
+                    'experience_years' =>
+                        'nullable|integer|min:0',
+
+                    'hourly_rate' =>
+                        'nullable|numeric|min:0',
+
+                    'skills' =>
+                        'nullable|string',
+
+                    'location' =>
+                        'nullable|string|max:255',
+
+                    'availability' =>
+                        'nullable|in:available,busy,unavailable',
+
+                    'portfolio_url' =>
+                        'nullable|url',
+
+                ]
+
+            );
+
+
+
+        if (
+            $validator->fails()
+        ) {
+
             return response()->json([
+
                 'success' => false,
-                'errors' => $validator->errors()
+
+                'errors' =>
+                    $validator->errors()
+
             ], 422);
+
         }
 
-        $profile = FreeLancerProfileModel::create([
-            'user_id' => $request->user_id,
-            'title' => $request->title,
-            'profile_image' => $request->profile_image,
-            'bio' => $request->bio,
-            'experience_years' => $request->experience_years ?? 0,
-            'hourly_rate' => $request->hourly_rate ?? 0,
-            'location' => $request->location,
-            'skills' => $request->skills,
-            'availability' => $request->availability ?? 'available',
-            'status' => 'pending'
-        ]);
+
+
+        $userId =
+            auth()->id();
+
+
+
+        $profile =
+
+            FreeLancerProfileModel
+                ::where(
+                    'user_id',
+                    $userId
+                )
+                ->first();
+
+
+
+        // if already created → update same profile
+        if (
+            $profile
+        ) {
+
+            $profile->update(
+
+                $request->only([
+
+                    'title',
+
+                    'bio',
+
+                    'experience_years',
+
+                    'hourly_rate',
+
+                    'skills',
+
+                    'location',
+
+                    'availability',
+
+                    'portfolio_url'
+
+                ])
+
+            );
+
+
+            return response()->json([
+
+                'success' => true,
+
+                'message' =>
+                    'Freelancer profile updated successfully',
+
+                'data' =>
+                    $profile
+
+            ]);
+
+        }
+
+
+
+        // create new profile
+        $profile =
+
+            FreeLancerProfileModel
+                ::create([
+
+                    'user_id' =>
+                        $userId,
+
+                    'title' =>
+                        $request->title,
+
+                    'bio' =>
+                        $request->bio,
+
+                    'experience_years' =>
+                        $request->experience_years
+                        ??
+                        0,
+
+                    'hourly_rate' =>
+                        $request->hourly_rate
+                        ??
+                        0,
+
+                    'skills' =>
+                        $request->skills,
+
+                    'location' =>
+                        $request->location,
+
+                    'availability' =>
+                        $request->availability
+                        ??
+                        'available',
+
+                    'portfolio_url' =>
+                        $request->portfolio_url,
+
+                    'rating' =>
+                        0,
+
+                    'completed_jobs' =>
+                        0,
+
+                    'status' =>
+                        'active'
+
+                ]);
+
+
 
         return response()->json([
+
             'success' => true,
-            'message' => 'Profile created successfully',
-            'data' => $profile
+
+            'message' =>
+                'Freelancer profile created successfully',
+
+            'data' =>
+                $profile
+
         ], 201);
+
     }
 
-    // Get single profile
-    public function show($id)
-    {
-        $profile = FreeLancerProfileModel::with('user')->find($id);
 
-        if (!$profile) {
+
+
+    // SHOW PROFILE
+    public function show($id ) 
+    {
+
+        $profile =
+
+            FreeLancerProfileModel::with('user')
+                ->find($id);
+
+
+
+        if (
+            !$profile
+        ) {
+
             return response()->json([
+
                 'success' => false,
-                'message' => 'Profile not found'
+
+                'message' =>
+                    'Freelancer profile not found'
+
             ], 404);
+
         }
+
+
 
         return response()->json([
+
             'success' => true,
-            'data' => $profile
+
+            'data' =>
+                $profile
+
         ]);
+
     }
 
-    // Update profile
-    public function update(Request $request, $id)
+
+
+
+    // UPDATE PROFILE
+    public function update(   Request $request, $id) 
     {
-        $profile = FreeLancerProfileModel::find($id);
 
-        if (!$profile) {
+        $profile =
+
+            FreeLancerProfileModel
+                ::find($id);
+
+
+
+        if (
+            !$profile
+        ) {
+
             return response()->json([
+
                 'success' => false,
-                'message' => 'Profile not found'
+
+                'message' =>
+                    'Freelancer profile not found'
+
             ], 404);
+
         }
 
-        $validator = Validator::make($request->all(), [
-            'title' => 'nullable|string|max:255',
-            'profile_image' => 'nullable|string',
-            'bio' => 'nullable|string',
-            'experience_years' => 'nullable|integer',
-            'hourly_rate' => 'nullable|numeric',
-            'location' => 'nullable|string',
-            'skills' => 'nullable|string',
-            'rating' => 'nullable|numeric',
-            'availability' =>
-                'nullable|in:available,busy,unavailable',
-            'status' =>
-                'nullable|in:pending,active,blocked',
-        ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
 
-        $profile->update($request->only([
-            'title',
-            'profile_image',
-            'bio',
-            'experience_years',
-            'hourly_rate',
-            'location',
-            'skills',
-            'rating',
-            'availability',
-            'status'
-        ]));
+        $profile->update(
+
+            $request->only([
+
+                'title',
+
+                'bio',
+
+                'experience_years',
+
+                'hourly_rate',
+
+                'skills',
+
+                'location',
+
+                'availability',
+
+                'portfolio_url',
+
+                'status'
+
+            ])
+
+        );
+
+
 
         return response()->json([
+
             'success' => true,
-            'message' => 'Profile updated successfully',
-            'data' => $profile
+
+            'message' =>
+                'Freelancer profile updated successfully',
+
+            'data' =>
+                $profile
+
         ]);
+
     }
 
-    // Delete profile
-    public function destroy($id)
-    {
-        $profile = FreeLancerProfileModel::find($id);
 
-        if (!$profile) {
+
+
+    // DELETE
+    public function destroy(
+        $id
+    ) 
+    {
+
+        $profile =
+
+            FreeLancerProfileModel
+                ::find($id);
+
+
+
+        if (
+            !$profile
+        ) {
+
             return response()->json([
+
                 'success' => false,
-                'message' => 'Profile not found'
+
+                'message' =>
+                    'Freelancer profile not found'
+
             ], 404);
+
         }
+
+
 
         $profile->delete();
 
+
+
         return response()->json([
+
             'success' => true,
-            'message' => 'Profile deleted successfully'
+
+            'message' =>
+                'Freelancer profile deleted successfully'
+
         ]);
+
     }
+
+public function myProfile()
+{
+    $profile = FreeLancerProfileModel::with('user')
+        ->where('user_id', auth()->id())
+        ->first();
+
+    if (!$profile) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Profile not found'
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $profile
+    ]);
+}
+
 }

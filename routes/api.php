@@ -4,8 +4,8 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FreeLancerProfileController;
-use App\Http\Controllers\ClientProfileController;
-use App\Http\Controllers\TaskCategoryController;
+use App\Http\Controllers\VerificationController;
+use App\Http\Controllers\TaskCategoriesController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ContractController;
@@ -26,20 +26,19 @@ Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
-
-    Route::get('/profile', [AuthController::class, 'profile']);
-
-    Route::post('/logout', [AuthController::class, 'logout']);
-
-});
 
 
-/*
+
+    /*
 |--------------------------------------------------------------------------
 | Freelancer Profile Routes
 |--------------------------------------------------------------------------
 */
+// Protected Routes
+Route::middleware('auth:sanctum')->group(function () {
+
+Route::post('/logout', [AuthController::class, 'logout']);
+
 
 Route::get('/freelancer-profiles', [FreeLancerProfileController::class, 'index']);
 
@@ -51,6 +50,7 @@ Route::put('/freelancer-profiles/{id}', [FreeLancerProfileController::class, 'up
 
 Route::delete('/freelancer-profiles/{id}', [FreeLancerProfileController::class, 'destroy']);
 
+    Route::get('/my-profile',[FreeLancerProfileController::class,'myProfile']);
 
 /*
 |--------------------------------------------------------------------------
@@ -58,15 +58,16 @@ Route::delete('/freelancer-profiles/{id}', [FreeLancerProfileController::class, 
 |--------------------------------------------------------------------------
 */
 
-Route::get('/client-profiles', [ClientProfileController::class, 'index']);
+Route::get('/verifications', [VerificationController::class, 'index']);
 
-Route::post('/client-profiles', [ClientProfileController::class, 'store']);
+Route::post('/verifications', [VerificationController::class, 'store']);
 
-Route::get('/client-profiles/{id}', [ClientProfileController::class, 'show']);
+Route::get('/verifications/{id}', [VerificationController::class, 'show']);
 
-Route::put('/client-profiles/{id}', [ClientProfileController::class, 'update']);
+Route::put('/verifications/{id}', [VerificationController::class, 'update']);
 
-Route::delete('/client-profiles/{id}', [ClientProfileController::class, 'destroy']);
+Route::delete('/verifications/{id}', [VerificationController::class, 'destroy']);
+
 
 
 /*
@@ -75,15 +76,18 @@ Route::delete('/client-profiles/{id}', [ClientProfileController::class, 'destroy
 |--------------------------------------------------------------------------
 */
 
-Route::get('/task-categories', [TaskCategoryController::class, 'index']);
+Route::get('/task-categories', [TaskCategoriesController::class, 'index']);
 
-Route::post('/task-categories', [TaskCategoryController::class, 'store']);
+Route::post('/task-categories', [TaskCategoriesController::class, 'store']);
 
-Route::get('/task-categories/{id}', [TaskCategoryController::class, 'show']);
+Route::get('/task-categories/{id}', [TaskCategoriesController::class, 'show']);
 
-Route::put('/task-categories/{id}', [TaskCategoryController::class, 'update']);
+Route::put('/task-categories/{id}', [TaskCategoriesController::class, 'update']);
 
-Route::delete('/task-categories/{id}', [TaskCategoryController::class, 'destroy']);
+Route::delete('/task-categories/{id}', [TaskCategoriesController::class, 'destroy']);
+
+
+
 
 
 /*
@@ -118,6 +122,21 @@ Route::get('/proposals/{id}', [ProposalController::class, 'show']);
 Route::put('/proposals/{id}', [ProposalController::class, 'update']);
 
 Route::delete('/proposals/{id}', [ProposalController::class, 'destroy']);
+
+
+
+
+});
+
+
+
+
+
+
+
+
+
+
 
 
 /*

@@ -17,7 +17,7 @@ class UserModel extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        
+        'profile_image',
         'password',
         'role',
         'status',
@@ -41,8 +41,28 @@ class UserModel extends Authenticatable
     return $this->hasOne(FreeLancerProfileModel::class, 'user_id');
 }
 
-public function clientProfile()
+public function Verification()
 {
-    return $this->hasOne(ClientProfileModel::class, 'user_id');
+    return $this->hasOne(VerificationModel::class, 'user_id');
 }
+
+public function tasks()
+{
+    return $this->hasMany(
+        TaskModel::class,
+        'user_id'
+    );
+}
+
+
+public function proposal()
+{
+    return $this->hasMany(
+        ProposalModel::class,
+        'user_id'
+    );
+}
+
+
+
 }
