@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProposalModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ProposalController extends Controller
@@ -28,61 +29,45 @@ class ProposalController extends Controller
     {
         $validator = Validator::make($request->all(), [
 
-            'task_id' => 'required|exists:tasks,id',
-
-            'user_id' => 'required|exists:users,id',
-
-            'description' => 'required|string',
-
-
-
-            'takes_time' => 'required|string|max:100',
-
-            'achievement' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
+            'task_id'      => 'required|exists:tasks,id',
+            'user_id'      => 'required|exists:users,id',
+            'description'  => 'required|string',
+            'takes_time'   => 'sometimes|required|numeric|min:0',
+            'achievement'  => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
 
         ]);
 
         if ($validator->fails()) {
-
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
-            ],422);
-
+                'errors'  => $validator->errors()
+            ], 422);
         }
 
         $achievementPath = null;
 
-        if ($request->hasFile('achievements')) {
-
+        if ($request->hasFile('achievement')) {
             $achievementPath = $request
-                ->file('achievements')
-                ->store('achievements','public');
-
+                ->file('achievement')
+                ->store('achievements', 'public');
         }
 
         $proposal = ProposalModel::create([
 
-            'task_id' => $request->task_id,
-
-            'user_id' => $request->user_id,
-
-            'description' => $request->description,
-
-
-            'takes_time' => $request->takes_time,
-
-            'achievement' => $achievementPath,
-
-            'status' => 'pending'
+            'task_id'      => $request->task_id,
+            'user_id'      => $request->user_id,
+            'description'  => $request->description,
+            'takes_time'   => $request->takes_time,
+            'achievement'  => $achievementPath,
+            'status'       => 'pending',
 
         ]);
 
         return response()->json([
-            'success'=>true,
-            'message'=>'Proposal submitted successfully.',
-            'data'=>$proposal->load('task','user')
-        ],201);
+            'success' => true,
+            'message' => 'Proposal submitted successfully.',
+            'data'    => $proposal->load('task', 'user')
+        ], 201);
     }
 
     // Show proposal
@@ -93,87 +78,77 @@ class ProposalController extends Controller
             'user'
         ])->find($id);
 
-        if(!$proposal){
-
+        if (!$proposal) {
             return response()->json([
-                'success'=>false,
-                'message'=>'Proposal not found'
-            ],404);
-
+                'success' => false,
+                'message' => 'Proposal not found'
+            ], 404);
         }
 
         return response()->json([
-            'success'=>true,
-            'data'=>$proposal
+            'success' => true,
+            'data' => $proposal
         ]);
     }
 
     // Update proposal
-    public function update(Request $request,$id)
+    public function update(Request $request, $id)
     {
+    
         $proposal = ProposalModel::find($id);
 
-        if(!$proposal){
-
+        if (!$proposal) {
             return response()->json([
-                'success'=>false,
-                'message'=>'Proposal not found'
-            ],404);
-
+                'success' => false,
+                'message' => 'Proposal not found'
+            ], 404);
         }
 
         $validator = Validator::make($request->all(), [
 
-            'description'=>'sometimes|required|string',
-
-
-
-            'takes_time'=>'sometimes|required|string|max:100',
-
-            'status'=>'sometimes|required|string',
-
-            'achievement'=>'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120'
+            'description' => 'sometimes|required|string',
+            'takes_time'  => 'sometimes|required|numeric|min:0',
+            'status'      => 'sometimes|required|string',
+            'achievement' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
 
         ]);
 
-        if($validator->fails()){
-
+        if ($validator->fails()) {
             return response()->json([
-                'success'=>false,
-                'errors'=>$validator->errors()
-            ],422);
-
+                'success' => false,
+                'errors'  => $validator->errors()
+            ], 422);
         }
 
         $data = $request->only([
             'description',
-            
             'takes_time',
             'status'
         ]);
 
-        if($request->hasFile('achievements')){
+        // Update achievement file
+        if ($request->hasFile('achievement')) {
 
-            if($proposal->achievements &&
-                Storage::disk('public')->exists($proposal->achievements)){
-
-                Storage::disk('public')
-                    ->delete($proposal->achievements);
-
+            // Delete old file
+            if (
+                $proposal->achievement &&
+                Storage::disk('public')->exists($proposal->achievement)
+            ) {
+                Storage::disk('public')->delete($proposal->achievement);
             }
 
-            $data['achievements'] = $request
-                ->file('achievements')
-                ->store('achievements','public');
-
+            // Store new file
+            $data['achievement'] = $request
+                ->file('achievement')
+                ->store('achievements', 'public');
         }
 
         $proposal->update($data);
 
         return response()->json([
-            'success'=>true,
-            'message'=>'Proposal updated successfully.',
-            'data'=>$proposal->load('task','user')
+            'success' => true,
+            'message' => 'Proposal updated successfully.',
+            'data'    => $proposal->fresh()->load('task', 'user')
         ]);
     }
 
@@ -182,28 +157,25 @@ class ProposalController extends Controller
     {
         $proposal = ProposalModel::find($id);
 
-        if(!$proposal){
-
+        if (!$proposal) {
             return response()->json([
-                'success'=>false,
-                'message'=>'Proposal not found'
-            ],404);
-
+                'success' => false,
+                'message' => 'Proposal not found'
+            ], 404);
         }
 
-        if($proposal->achievements &&
-            Storage::disk('public')->exists($proposal->achievements)){
-
-            Storage::disk('public')
-                ->delete($proposal->achievements);
-
+        if (
+            $proposal->achievement &&
+            Storage::disk('public')->exists($proposal->achievement)
+        ) {
+            Storage::disk('public')->delete($proposal->achievement);
         }
 
         $proposal->delete();
 
         return response()->json([
-            'success'=>true,
-            'message'=>'Proposal deleted successfully.'
+            'success' => true,
+            'message' => 'Proposal deleted successfully.'
         ]);
     }
 }

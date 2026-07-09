@@ -13,21 +13,18 @@ class ChatModel extends Model
 
     protected $fillable = [
         'contract_id',
-        'sender_id',
-        'receiver_id',
-        'message',
-        'attachment',
-        'is_read',
-        'status'
+        'last_message',
+        'last_message_time'
     ];
 
     protected function casts(): array
     {
         return [
-            'status' => 'integer'
+            'last_message_time' => 'datetime',
         ];
     }
 
+    // Chat belongs to Contract
     public function contract()
     {
         return $this->belongsTo(
@@ -36,19 +33,15 @@ class ChatModel extends Model
         );
     }
 
-    public function sender()
-    {
-        return $this->belongsTo(
-            UserModel::class,
-            'sender_id'
-        );
-    }
 
-    public function receiver()
+
+    
+    // Chat has many Messages
+    public function messages()
     {
-        return $this->belongsTo(
-            UserModel::class,
-            'receiver_id'
+        return $this->hasMany(
+            MessageModel::class,
+            'chat_id'
         );
     }
 }

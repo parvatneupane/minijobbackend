@@ -9,11 +9,12 @@ use App\Http\Controllers\TaskCategoriesController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ContractController;
-use App\Http\Controllers\MilestoneController;
+
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\MessageController;
 
 
 /*
@@ -125,20 +126,6 @@ Route::delete('/proposals/{id}', [ProposalController::class, 'destroy']);
 
 
 
-
-});
-
-
-
-
-
-
-
-
-
-
-
-
 /*
 |--------------------------------------------------------------------------
 | Contract Routes
@@ -158,19 +145,40 @@ Route::delete('/contracts/{id}', [ContractController::class, 'destroy']);
 
 /*
 |--------------------------------------------------------------------------
-| Milestone Routes
+| Chat Routes
 |--------------------------------------------------------------------------
 */
 
-Route::get('/milestones', [MilestoneController::class, 'index']);
+ Route::get('/chats', [ChatController::class,'index']);
 
-Route::post('/milestones', [MilestoneController::class, 'store']);
+Route::post('/chats', [ChatController::class,'store']);
 
-Route::get('/milestones/{id}', [MilestoneController::class, 'show']);
+Route::get('/chats/{id}', [ChatController::class,'show']);
 
-Route::put('/milestones/{id}', [MilestoneController::class, 'update']);
+Route::put('/chats/{id}', [ChatController::class,'update']);
 
-Route::delete('/milestones/{id}', [MilestoneController::class, 'destroy']);
+Route::delete('/chats/{id}', [ChatController::class,'destroy']);
+
+
+/*
+|--------------------------------------------------------------------------
+| messages Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/messages', [MessageController::class, 'index']);
+
+Route::post('/messages', [MessageController::class, 'store']);
+
+Route::get('/messages/{id}', [MessageController::class, 'show']);
+
+Route::put('/messages/{id}', [MessageController::class, 'update']);
+
+Route::delete('/messages/{id}', [MessageController::class, 'destroy']);
+
+Route::get('/chats/{chatId}/messages', [MessageController::class, 'chatMessages']);
+
+Route::put('/chats/{chatId}/read', [MessageController::class, 'markAsRead']);
 
 
 /*
@@ -196,15 +204,21 @@ Route::delete('/submissions/{id}', [SubmissionController::class, 'destroy']);
 |--------------------------------------------------------------------------
 */
 
-Route::get('/payments', [PaymentController::class, 'index']);
+Route::get('/payments', [PaymentController::class,'index']);
 
-Route::post('/payments', [PaymentController::class, 'store']);
+Route::post('/payments', [PaymentController::class,'store']);
 
-Route::get('/payments/{id}', [PaymentController::class, 'show']);
+Route::get('/payments/{id}', [PaymentController::class,'show']);
 
-Route::put('/payments/{id}', [PaymentController::class, 'update']);
+Route::put('/payments/{id}', [PaymentController::class,'update']);
 
-Route::delete('/payments/{id}', [PaymentController::class, 'destroy']);
+Route::delete('/payments/{id}', [PaymentController::class,'destroy']);
+
+// Release payment to freelancer
+Route::put('/payments/{id}/release', [PaymentController::class,'release']);
+
+// Refund payment
+Route::put('/payments/{id}/refund', [PaymentController::class,'refund']);
 
 
 /*
@@ -223,19 +237,22 @@ Route::put('/reviews/{id}', [ReviewController::class, 'update']);
 
 Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
+});
 
-/*
-|--------------------------------------------------------------------------
-| Chat Routes
-|--------------------------------------------------------------------------
-*/
 
-Route::get('/chats', [ChatController::class, 'index']);
 
-Route::post('/chats', [ChatController::class, 'store']);
 
-Route::get('/chats/{id}', [ChatController::class, 'show']);
 
-Route::put('/chats/{id}', [ChatController::class, 'update']);
 
-Route::delete('/chats/{id}', [ChatController::class, 'destroy']);
+
+
+
+
+
+
+
+
+
+
+
+

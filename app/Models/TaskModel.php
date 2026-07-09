@@ -46,4 +46,15 @@ class TaskModel extends Model
             'category_id'
         );
     }
+
+    public function contract()
+{
+    return $this->hasOne(
+        ContractModel::class,
+        'task_id'
+    );
+}
+
+
+
 }

@@ -12,19 +12,33 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('contracts', function (Blueprint $table) {
+
             $table->id();
+
+            $table->foreignId('task_id')
+                ->constrained('tasks')
+                ->cascadeOnDelete();
+
             $table->foreignId('proposal_id')
                 ->constrained('proposals')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
+
+            $table->foreignId('client_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
+            $table->foreignId('freelancer_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
 
             $table->date('start_date');
-            $table->date('end_date')->nullable();       
-            $table->decimal('total_payment', 10, 2);
-            $table->string('agreement_file')->nullable();
+
+            $table->date('deadline');
+
             $table->enum('status', [
                 'active',
                 'completed',
-                'terminated'
+                'cancelled'
             ])->default('active');
 
             $table->timestamps();

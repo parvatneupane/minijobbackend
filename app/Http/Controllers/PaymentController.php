@@ -2,19 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\PaymentModel;
+use App\Models\FreeLancerProfileModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PaymentController extends Controller
 {
-    // Get all payments
+    /**
+     * Display all payments
+     */
     public function index()
     {
-        $payments = PaymentModel::with(
-            'contract'
-        )->get();
+        $payments = PaymentModel::with([
+            'contract',
+            'client',
+            'freelancer'
+        ])->latest()->get();
 
         return response()->json([
             'success' => true,
@@ -22,126 +26,268 @@ class PaymentController extends Controller
         ]);
     }
 
-    // Create payment
+    /**
+     * Create Payment
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
 
-            'contract_id' =>
-                'required|exists:contracts,id',
+            'contract_id' => 'required|exists:contracts,id',
 
-            'amount' =>
-                'required|numeric',
+            'client_id' => 'required|exists:users,id',
 
-            'payment_method' =>
-                'required|string|max:255'
+            'freelancer_id' => 'required|exists:users,id',
+
+            'amount' => 'required|numeric|min:1',
+
+            'payment_method' => 'required|string'
+
         ]);
 
         if ($validator->fails()) {
+
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
-            ], 422);
+            ],422);
+
         }
+
+        $amount = $request->amount;
+
+        // 10% Platform Fee
+        $platformFee = $amount * 0.10;
+
+        $freelancerAmount = $amount - $platformFee;
 
         $payment = PaymentModel::create([
+
             'contract_id' => $request->contract_id,
-            'amount' => $request->amount,
-            'payment_method' =>
-                $request->payment_method,
-            'status' => 'pending'
+
+            'client_id' => $request->client_id,
+
+            'freelancer_id' => $request->freelancer_id,
+
+            'amount' => $amount,
+
+            'platform_fee' => $platformFee,
+
+            'freelancer_amount' => $freelancerAmount,
+
+            'payment_method' => $request->payment_method,
+
+            // Esewa transaction id
+            'transaction_id' => $request->transaction_id,
+
+            // After successful payment
+            'status' => 'escrow',
+
+            'paid_at' => now()
+
         ]);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Payment created successfully',
-            'data' => $payment
-        ], 201);
+
+            'success'=>true,
+
+            'message'=>'Payment successful and kept in escrow.',
+
+            'data'=>$payment
+
+        ],201);
     }
 
-    // Get single payment
+    /**
+     * Show Single Payment
+     */
     public function show($id)
     {
-        $payment = PaymentModel::with(
-            'contract'
-        )->find($id);
+        $payment = PaymentModel::with([
+            'contract',
+            'client',
+            'freelancer'
+        ])->find($id);
 
-        if (!$payment) {
+        if(!$payment){
+
             return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
+                'success'=>false,
+                'message'=>'Payment not found.'
+            ],404);
+
         }
 
         return response()->json([
-            'success' => true,
-            'data' => $payment
+            'success'=>true,
+            'data'=>$payment
         ]);
     }
 
-    // Update payment
-    public function update(Request $request, $id)
+    /**
+     * Update Payment
+     */
+    public function update(Request $request,$id)
     {
         $payment = PaymentModel::find($id);
 
-        if (!$payment) {
+        if(!$payment){
+
             return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
+                'success'=>false,
+                'message'=>'Payment not found.'
+            ],404);
+
         }
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(),[
 
-            'amount' =>
-                'sometimes|numeric',
+            'payment_method'=>'sometimes|string',
 
-            'payment_method' =>
-                'sometimes|string|max:255',
+            'transaction_id'=>'sometimes|string',
 
-            'status' =>
-                'sometimes|in:pending,completed,failed'
+            'status'=>'sometimes|in:pending,escrow,released,failed,refunded'
+
         ]);
 
-        if ($validator->fails()) {
+        if($validator->fails()){
+
             return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+                'success'=>false,
+                'errors'=>$validator->errors()
+            ],422);
+
         }
 
         $payment->update(
+
             $request->only([
-                'amount',
                 'payment_method',
+                'transaction_id',
                 'status'
             ])
+
         );
 
         return response()->json([
-            'success' => true,
-            'message' => 'Payment updated successfully',
-            'data' => $payment
+
+            'success'=>true,
+
+            'message'=>'Payment updated successfully.',
+
+            'data'=>$payment
+
         ]);
     }
 
-    // Delete payment
+    /**
+     * Release Payment
+     * Client approves completed work
+     */
+public function release($id)
+{
+    $payment = PaymentModel::find($id);
+
+    if (!$payment) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Payment not found.'
+        ],404);
+    }
+
+    if ($payment->status != 'escrow') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Payment is not in escrow.'
+        ],400);
+    }
+
+    // Release payment
+    $payment->status = 'released';
+    $payment->released_at = now();
+    $payment->save();
+
+    // Find freelancer profile
+    $profile = FreeLancerProfileModel::where(
+        'user_id',
+        $payment->freelancer_id
+    )->first();
+
+    if ($profile) {
+
+        $profile->earned_money =
+            $profile->earned_money + $payment->freelancer_amount;
+
+        $profile->completed_jobs =
+            $profile->completed_jobs + 1;
+
+        $profile->save();
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Payment released successfully.',
+        'data' => $payment
+    ]);
+}
+
+    /**
+     * Refund Payment
+     */
+    public function refund($id)
+    {
+        $payment = PaymentModel::find($id);
+
+        if(!$payment){
+
+            return response()->json([
+                'success'=>false,
+                'message'=>'Payment not found.'
+            ],404);
+
+        }
+
+        $payment->update([
+
+            'status'=>'refunded'
+
+        ]);
+
+        return response()->json([
+
+            'success'=>true,
+
+            'message'=>'Payment refunded.',
+
+            'data'=>$payment
+
+        ]);
+    }
+
+    /**
+     * Delete Payment
+     */
     public function destroy($id)
     {
         $payment = PaymentModel::find($id);
 
-        if (!$payment) {
+        if(!$payment){
+
             return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
+                'success'=>false,
+                'message'=>'Payment not found.'
+            ],404);
+
         }
 
         $payment->delete();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Payment deleted successfully'
+
+            'success'=>true,
+
+            'message'=>'Payment deleted successfully.'
+
         ]);
     }
 }

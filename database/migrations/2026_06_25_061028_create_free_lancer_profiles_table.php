@@ -48,6 +48,10 @@ return new class extends Migration
             $table->integer('completed_jobs')
                 ->default(0);
 
+            
+            $table->decimal('earned_money', 3, 2)
+                ->default(0.00);
+
             // Profile status
             $table->enum('status', [
                 'inactive',

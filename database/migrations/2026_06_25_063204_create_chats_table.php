@@ -12,14 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chats', function (Blueprint $table) {
+
             $table->id();
-            $table->foreignId('contract_id')->constrained('contracts')->onDelete('cascade');
-            $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-            $table->text('message');  
-            $table->string('attachment')->nullable();
-            $table->string('is_read')->default('0');
-            $table->integer('status')->default(0);  
+
+            $table->foreignId('contract_id')
+                ->unique()
+                ->constrained('contracts')
+                ->cascadeOnDelete();
+
+            $table->text('last_message')->nullable();
+
+            $table->timestamp('last_message_time')->nullable();
+
             $table->timestamps();
         });
     }

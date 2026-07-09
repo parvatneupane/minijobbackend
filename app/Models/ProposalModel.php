@@ -42,4 +42,12 @@ class ProposalModel extends Model
             'user_id'
         );
     }
+
+    public function contract()
+{
+    return $this->hasOne(
+        ContractModel::class,
+        'proposal_id'
+    );
+}
 }

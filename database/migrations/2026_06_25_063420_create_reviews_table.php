@@ -11,16 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('reviews', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('contract_id')->constrained('contracts')->onDelete('cascade');
-            $table->foreignId('reviewer_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('reviewee_id')->constrained('users')->onDelete('cascade');
-            $table->integer('rating');
-            $table->text('comment');
-            $table->integer('status')->default(0);
-            $table->timestamps();
-        });
+    Schema::create('reviews', function (Blueprint $table) {
+    $table->id();
+
+    $table->foreignId('task_id')->constrained('tasks')->cascadeOnDelete();
+
+    $table->foreignId('contract_id')->constrained('contracts')->cascadeOnDelete();
+
+    $table->foreignId('client_id')->constrained('users')->cascadeOnDelete();
+
+    $table->foreignId('freelancer_id')->constrained('users')->cascadeOnDelete();
+
+    $table->integer('rating');
+
+    $table->text('review')->nullable();
+
+    $table->boolean('recommended')->default(false);
+
+    $table->timestamps();
+});
     }
 
     /**

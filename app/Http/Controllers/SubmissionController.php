@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\SubmissionModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SubmissionController extends Controller
@@ -13,141 +13,135 @@ class SubmissionController extends Controller
     public function index()
     {
         $submissions = SubmissionModel::with([
-            'milestone',
+            'contract',
             'freelancer'
-        ])->get();
+        ])->latest()->get();
 
         return response()->json([
-            'success' => true,
-            'data' => $submissions
+            'success'=>true,
+            'data'=>$submissions
         ]);
     }
 
-    // Create submission
+    // Store submission
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-
-            'milestone_id' =>
-                'required|exists:milestones,id',
-
-            'free_lancer_id' =>
-                'required|exists:free_lancer_profiles,id',
-
-            'submission_file' =>
-                'required|string',
-
-            'submission_description' =>
-                'required|string'
+        $validator = Validator::make($request->all(),[
+            'contract_id'=>'required|exists:contracts,id',
+            'freelancer_id'=>'required|exists:users,id',
+            'message'=>'nullable|string',
+            'attachment'=>'required|file|mimes:zip,pdf,doc,docx,jpg,jpeg,png,apk|max:51200'
         ]);
 
-        if ($validator->fails()) {
+        if($validator->fails()){
             return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+                'success'=>false,
+                'errors'=>$validator->errors()
+            ],422);
         }
 
-        $submission = SubmissionModel::create([
-            'milestone_id' => $request->milestone_id,
-            'free_lancer_id' => $request->free_lancer_id,
-            'submission_file' => $request->submission_file,
-            'submission_description' =>
-                $request->submission_description,
-            'status' => 'pending'
+        $file=$request->file('attachment');
+
+        $path=$file->store('submissions','public');
+
+        $submission=SubmissionModel::create([
+            'contract_id'=>$request->contract_id,
+            'freelancer_id'=>$request->freelancer_id,
+            'message'=>$request->message,
+            'attachment'=>$path,
+            'status'=>'submitted',
+            'submitted_at'=>now()
         ]);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Submission created successfully',
-            'data' => $submission
-        ], 201);
+            'success'=>true,
+            'message'=>'Work submitted successfully.',
+            'data'=>$submission
+        ],201);
     }
 
-    // Get single submission
+    // Show single submission
     public function show($id)
     {
-        $submission = SubmissionModel::with([
-            'milestone',
+        $submission=SubmissionModel::with([
+            'contract',
             'freelancer'
         ])->find($id);
 
-        if (!$submission) {
+        if(!$submission){
             return response()->json([
-                'success' => false,
-                'message' => 'Submission not found'
-            ], 404);
+                'success'=>false,
+                'message'=>'Submission not found.'
+            ],404);
         }
 
         return response()->json([
-            'success' => true,
-            'data' => $submission
+            'success'=>true,
+            'data'=>$submission
         ]);
     }
 
-    // Update submission
-    public function update(Request $request, $id)
+    // Client update (approve/revision)
+    public function update(Request $request,$id)
     {
-        $submission = SubmissionModel::find($id);
+        $submission=SubmissionModel::find($id);
 
-        if (!$submission) {
+        if(!$submission){
             return response()->json([
-                'success' => false,
-                'message' => 'Submission not found'
-            ], 404);
+                'success'=>false,
+                'message'=>'Submission not found.'
+            ],404);
         }
 
-        $validator = Validator::make($request->all(), [
-
-            'submission_file' =>
-                'sometimes|string',
-
-            'submission_description' =>
-                'sometimes|string',
-
-            'status' =>
-                'sometimes|in:pending,approved,rejected'
+        $validator=Validator::make($request->all(),[
+            'status'=>'required|in:submitted,revision_requested,approved',
+            'client_feedback'=>'nullable|string'
         ]);
 
-        if ($validator->fails()) {
+        if($validator->fails()){
             return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+                'success'=>false,
+                'errors'=>$validator->errors()
+            ],422);
         }
 
-        $submission->update(
-            $request->only([
-                'submission_file',
-                'submission_description',
-                'status'
-            ])
-        );
+        $submission->status=$request->status;
+        $submission->client_feedback=$request->client_feedback;
+
+        if($request->status=="approved"){
+            $submission->approved_at=now();
+        }
+
+        $submission->save();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Submission updated successfully',
-            'data' => $submission
+            'success'=>true,
+            'message'=>'Submission updated successfully.',
+            'data'=>$submission
         ]);
     }
 
-    // Delete submission
+    // Delete
     public function destroy($id)
     {
-        $submission = SubmissionModel::find($id);
+        $submission=SubmissionModel::find($id);
 
-        if (!$submission) {
+        if(!$submission){
             return response()->json([
-                'success' => false,
-                'message' => 'Submission not found'
-            ], 404);
+                'success'=>false,
+                'message'=>'Submission not found.'
+            ],404);
+        }
+
+        if(Storage::disk('public')->exists($submission->attachment)){
+            Storage::disk('public')->delete($submission->attachment);
         }
 
         $submission->delete();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Submission deleted successfully'
+            'success'=>true,
+            'message'=>'Submission deleted successfully.'
         ]);
     }
 }

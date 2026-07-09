@@ -63,6 +63,66 @@ public function proposal()
     );
 }
 
+// Contracts where user is the client
+public function clientContracts()
+{
+    return $this->hasMany(
+        ContractModel::class,
+        'client_id'
+    );
+}
 
+// Contracts where user is the freelancer
+public function freelancerContracts()
+{
+    return $this->hasMany(
+        ContractModel::class,
+        'freelancer_id'
+    );
+}
+
+// Messages sent by the user
+public function messages()
+{
+    return $this->hasMany(
+        MessageModel::class,
+        'sender_id'
+    );
+}
+ 
+public function submissions()
+{
+    return $this->hasMany(
+        SubmissionModel::class,
+        'freelancer_id'
+    );
+}
+
+// Payments made by this user (Client)
+public function paymentsMade()
+{
+    return $this->hasMany(
+        PaymentModel::class,
+        'client_id'
+    );
+}
+
+// Payments received by this user (Freelancer)
+public function paymentsReceived()
+{
+    return $this->hasMany(
+        PaymentModel::class,
+        'freelancer_id'
+    );
+}
+
+// Withdrawal requests
+public function withdrawals()
+{
+    return $this->hasMany(
+        WithdrawalModel::class,
+        'user_id'
+    );
+}
 
 }

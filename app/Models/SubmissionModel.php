@@ -2,36 +2,47 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SubmissionModel extends Model
 {
     use HasFactory;
 
-    protected $table = 'submissions';
+    protected $table="submissions";
 
-    protected $fillable = [
-        'milestone_id',
-        'free_lancer_id',
-        'submission_file',
-        'submission_description',
-        'status'
+    protected $fillable=[
+        'contract_id',
+        'freelancer_id',
+        'message',
+        'attachment',
+        'status',
+        'client_feedback',
+        'submitted_at',
+        'approved_at'
     ];
 
-    public function milestone()
+    protected function casts():array
+    {
+        return[
+            'submitted_at'=>'datetime',
+            'approved_at'=>'datetime'
+        ];
+    }
+
+    public function contract()
     {
         return $this->belongsTo(
-            MilestoneModel::class,
-            'milestone_id'
+            ContractModel::class,
+            'contract_id'
         );
     }
 
     public function freelancer()
     {
         return $this->belongsTo(
-            FreeLancerProfileModel::class,
-            'free_lancer_id'
+            UserModel::class,
+            'freelancer_id'
         );
     }
 }

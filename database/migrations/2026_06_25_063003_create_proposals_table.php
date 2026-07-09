@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('task_id')->constrained('tasks')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('description');
-            $table->string('takes_time');
+            $table->integer('takes_time');
             $table->string('achievement')->nullable();
             $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
             $table->timestamps();

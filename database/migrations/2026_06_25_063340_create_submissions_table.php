@@ -6,25 +6,40 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('submissions', function (Blueprint $table) {
+
             $table->id();
-            $table->foreignId('milestone_id')->constrained('milestones')->onDelete('cascade');
-            $table->foreignId('free_lancer_id')->constrained('free_lancer_profiles')->onDelete('cascade');
-            $table->string('submission_file');
-            $table->text('submission_description');
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+
+            $table->foreignId('contract_id')
+                ->constrained('contracts')
+                ->cascadeOnDelete();
+
+            $table->foreignId('freelancer_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
+            $table->text('message')->nullable();
+
+            $table->string('attachment');
+
+            $table->enum('status',[
+                'submitted',
+                'revision_requested',
+                'approved'
+            ])->default('submitted');
+
+            $table->text('client_feedback')->nullable();
+
+            $table->timestamp('submitted_at')->nullable();
+
+            $table->timestamp('approved_at')->nullable();
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('submissions');
