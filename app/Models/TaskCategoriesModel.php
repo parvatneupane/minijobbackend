@@ -22,4 +22,14 @@ class TaskCategoriesModel extends Model
             'status' => 'integer'
         ];
     }
+
+    public function freelancers()
+{
+    return $this->belongsToMany(
+        FreeLancerProfileModel::class,
+        'free_lancer_profile_task_category',
+        'task_category_id',
+        'free_lancer_profile_id'
+    );
+}
 }

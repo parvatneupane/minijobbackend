@@ -12,20 +12,27 @@ class ReviewController extends Controller
     /**
      * Get all reviews
      */
-    public function index()
-    {
-        $reviews = ReviewModel::with([
-            'contract',
-            'task',
-            'client',
-            'freelancer'
-        ])->latest()->get();
+  public function index(Request $request)
+{
+    $query = ReviewModel::with([
+        'contract',
+        'task',
+        'client',
+        'freelancer'
+    ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $reviews
-        ]);
+    // Filter by freelancer_id if provided in the URL query
+    if ($request->has('freelancer_id')) {
+        $query->where('freelancer_id', $request->freelancer_id);
     }
+
+    $reviews = $query->latest()->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $reviews
+    ]);
+}
 
     /**
      * Store Review

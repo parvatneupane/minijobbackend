@@ -183,7 +183,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ route('dashboard') }}">
+            <a class="navbar-brand" href="{{ route('admin.dashboard') }}">
                 <i class="fas fa-briefcase me-2"></i> FreelanceHub
             </a>
             

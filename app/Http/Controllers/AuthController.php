@@ -24,7 +24,7 @@ class AuthController extends Controller
                     'required|min:6|confirmed',
 
                 'role' =>
-                    'required|in:client,freelancer'
+                    'required|in:client,freelancer,admin'
             ]
         );
 

@@ -44,6 +44,15 @@ class FreeLancerProfileModel extends Model
         return $this->belongsTo(UserModel::class);
     }
 
+    public function categories()
+{
+    return $this->belongsToMany(
+        TaskCategoriesModel::class,
+        'free_lancer_profile_task_category',
+        'free_lancer_profile_id',
+        'task_category_id'
+    );
+}
     /*
     |--------------------------------------------------------------------------
     | Helpers

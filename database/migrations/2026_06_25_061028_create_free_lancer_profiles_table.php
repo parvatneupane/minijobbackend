@@ -17,6 +17,7 @@ return new class extends Migration
 
             // Professional info
             $table->string('title')->nullable();
+            
             $table->text('bio')->nullable();
 
             $table->integer('experience_years')
@@ -49,8 +50,9 @@ return new class extends Migration
                 ->default(0);
 
             
-            $table->decimal('earned_money', 3, 2)
-                ->default(0.00);
+            // Change this:
+                $table->decimal('earned_money', 15, 2)->default(0.00);
+            
 
             // Profile status
             $table->enum('status', [

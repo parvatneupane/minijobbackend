@@ -1,41 +1,29 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\TaskController;
-use App\Http\Controllers\ProposalController;
-use App\Http\Controllers\ContractController;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\MessageController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\FreeLancerProfileController;
-use App\Http\Controllers\VerificationController;
-use App\Http\Controllers\TaskCategoriesController;
-
-
+use App\Http\Controllers\AdminController\AdminAuthController;
+use App\Http\Controllers\AdminController\AdminDashboardController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');
 });
 
+Route::middleware('guest')->group(function () {
 
+    Route::get('/login', [AdminAuthController::class, 'showLogin'])
+        ->name('login');
 
-// Authentication Routes
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
+    Route::post('/login', [AdminAuthController::class, 'login'])
+        ->name('login.submit');
 
-Route::get('/register', function () {
-    return view('auth.register');
-})->name('register');
+});
 
+Route::middleware(['auth', 'admin'])->group(function () {
 
-Route::get('/', function () {
-    return view('dashboard');
-})->name('dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+        ->name('admin.dashboard');
 
+    Route::post('/logout', [AdminAuthController::class, 'logout'])
+        ->name('logout');
 
-
-
-
-
+});
