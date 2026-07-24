@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\NotificationModel;
+use App\Models\UserModel;
 use App\Models\ChatModel;
+use Illuminate\Support\Facades\Log;
+
+
 use App\Models\MessageModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -30,86 +35,135 @@ class MessageController extends Controller
     /**
      * Send message
      */
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
+public function store(Request $request)
+{
+    $validator = Validator::make($request->all(), [
 
-            'chat_id' => 'required|exists:chats,id',
+        'chat_id' => 'required|exists:chats,id',
 
-            'sender_id' => 'required|exists:users,id',
+        'sender_id' => 'required|exists:users,id',
 
-            'message' => 'nullable|string',
+        'message' => 'nullable|string',
 
-            'attachment' => 'nullable|file|max:10240',
+        'attachment' => 'nullable|file|max:10240',
 
-            'message_type' => 'nullable|string'
+        'message_type' => 'nullable|string'
 
-        ]);
+    ]);
 
-        if ($validator->fails()) {
-
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-
-        }
-
-        if (!$request->message && !$request->hasFile('attachment')) {
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Message or attachment is required.'
-            ], 422);
-
-        }
-
-        $attachmentPath = null;
-
-        if ($request->hasFile('attachment')) {
-
-            $attachmentPath = $request
-                ->file('attachment')
-                ->store('chat_attachments', 'public');
-
-        }
-
-        $message = MessageModel::create([
-
-            'chat_id' => $request->chat_id,
-
-            'sender_id' => $request->sender_id,
-
-            'message' => $request->message,
-
-            'attachment' => $attachmentPath,
-
-            'message_type' => $request->message_type ?? 'text',
-
-            'is_seen' => false
-
-        ]);
-
-        // Update chat last message
-        ChatModel::where('id', $request->chat_id)->update([
-            'last_message' => $request->message ?? 'Attachment',
-            'last_message_time' => now()
-        ]);
+    if ($validator->fails()) {
 
         return response()->json([
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
 
-            'success' => true,
-
-            'message' => 'Message sent successfully.',
-
-            'data' => $message->load([
-                'sender',
-                'chat'
-            ])
-
-        ], 201);
     }
 
+    if (!$request->message && !$request->hasFile('attachment')) {
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Message or attachment is required.'
+        ], 422);
+
+    }
+
+    $attachmentPath = null;
+
+    if ($request->hasFile('attachment')) {
+
+        $attachmentPath = $request
+            ->file('attachment')
+            ->store('chat_attachments', 'public');
+
+    }
+
+    // Create message
+    $message = MessageModel::create([
+
+        'chat_id' => $request->chat_id,
+
+        'sender_id' => $request->sender_id,
+
+        'message' => $request->message,
+
+        'attachment' => $attachmentPath,
+
+        'message_type' => $request->message_type ?? 'text',
+
+        'is_seen' => false
+
+    ]);
+
+    // Load sender relationship
+    $message->load('sender');
+
+    // Load chat with contract
+    $chat = ChatModel::with('contract')->find($request->chat_id);
+
+    // Update chat last message
+    $chat->update([
+        'last_message' => $request->message ?? 'Attachment',
+        'last_message_time' => now()
+    ]);
+
+    // Determine receiver
+    if ($message->sender_id == $chat->contract->client_id) {
+
+        // Client sent message
+        $receiverId = $chat->contract->freelancer_id;
+
+    } else {
+
+        // Freelancer sent message
+        $receiverId = $chat->contract->client_id;
+
+    }
+
+    // Save notification in database
+    NotificationModel::create([
+        'user_id' => $receiverId,
+        'title' => 'New Message',
+        'message' => $message->sender->name . ': ' .
+            ($request->message ?: 'Sent an attachment')
+    ]);
+
+    // Send Push Notification
+    try {
+
+        $receiver = UserModel::find($receiverId);
+
+        if ($receiver && !empty($receiver->fcm_token)) {
+
+            app(\App\Services\FCMService::class)->sendNotification(
+                $receiver->fcm_token,
+                'New Message',
+                $message->sender->name . ': ' .
+                ($request->message ?: 'Sent an attachment')
+            );
+
+        }
+
+    } catch (\Exception $e) {
+
+        Log::error('FCM Message Error: ' . $e->getMessage());
+
+    }
+
+    return response()->json([
+
+        'success' => true,
+
+        'message' => 'Message sent successfully.',
+
+        'data' => $message->fresh()->load([
+            'sender',
+            'chat'
+        ])
+
+    ], 201);
+}
     /**
      * Show single message
      */

@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\ConflictController;
+use App\Http\Controllers\ConflictReplyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FreeLancerProfileController;
 use App\Http\Controllers\VerificationController;
@@ -9,7 +10,7 @@ use App\Http\Controllers\TaskCategoriesController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ContractController;
-
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
@@ -27,7 +28,12 @@ Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/login', [AuthController::class, 'login']);
 
-
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('save-fcm-token', [AuthController::class, 'saveFcmToken']);
+    Route::post('/send-notification', [NotificationController::class, 'sendNotification']);
+    Route::get('/notifications/{id}', [NotificationController::class, 'getNotification']);
+    
+});
 
 
     /*
@@ -237,9 +243,56 @@ Route::put('/reviews/{id}', [ReviewController::class, 'update']);
 
 Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
+
+
+
 });
 
+Route::middleware('auth:sanctum')->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Conflict Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/conflicts', [ConflictController::class, 'index']);
+
+    Route::post('/conflicts', [ConflictController::class, 'store']);
+
+    Route::get('/conflicts/{id}', [ConflictController::class, 'show']);
+
+    Route::put('/conflicts/{id}', [ConflictController::class, 'update']);
+
+    Route::delete('/conflicts/{id}', [ConflictController::class, 'destroy']);
+
+    Route::get('/conflicts/user/{userId}', [ConflictController::class, 'myConflicts']);
+
+
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Conflict Reply Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/conflict-replies', [ConflictReplyController::class, 'index']);
+
+    Route::post('/conflict-replies', [ConflictReplyController::class, 'store']);
+
+    Route::get('/conflict-replies/{id}', [ConflictReplyController::class, 'show']);
+
+    Route::put('/conflict-replies/{id}', [ConflictReplyController::class, 'update']);
+
+    Route::delete('/conflict-replies/{id}', [ConflictReplyController::class, 'destroy']);
+
+    Route::get(
+        '/conflict-replies/conflict/{conflictId}',
+        [ConflictReplyController::class, 'conflictReplies']
+    );
+
+});
 
 
 

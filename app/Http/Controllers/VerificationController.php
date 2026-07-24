@@ -1,7 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\NotificationModel;
+use App\Models\UserModel;
+use App\Services\FCMService;
+use Illuminate\Support\Facades\Log;
 use App\Models\VerificationModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -122,101 +125,154 @@ public function show($userId)
 }
 
     // Update verification
-    public function update(Request $request, $id)
-    {
-        $verification = VerificationModel::find($id);
+public function update(Request $request, $id)
+{
+    $verification = VerificationModel::find($id);
 
-        if (!$verification) {
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Verification not found'
-            ], 404);
-
-        }
-
-        $validator = Validator::make($request->all(), [
-
-            'full_name' => 'nullable|string|max:255',
-
-            'citizenship_front' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
-
-            'citizenship_back' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
-
-            'pan_card' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
-
-            'status' => 'nullable|in:pending,approved,rejected',
-
-            'remarks' => 'nullable|string',
-
-        ]);
-
-        if ($validator->fails()) {
-
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-
-        }
-
-        if ($request->filled('full_name')) {
-            $verification->full_name = $request->full_name;
-        }
-
-        if ($request->hasFile('citizenship_front')) {
-
-            if ($verification->citizenship_front) {
-                Storage::disk('public')->delete($verification->citizenship_front);
-            }
-
-            $verification->citizenship_front = $request->file('citizenship_front')
-                ->store('verifications', 'public');
-        }
-
-        if ($request->hasFile('citizenship_back')) {
-
-            if ($verification->citizenship_back) {
-                Storage::disk('public')->delete($verification->citizenship_back);
-            }
-
-            $verification->citizenship_back = $request->file('citizenship_back')
-                ->store('verifications', 'public');
-        }
-
-        if ($request->hasFile('pan_card')) {
-
-            if ($verification->pan_card) {
-                Storage::disk('public')->delete($verification->pan_card);
-            }
-
-            $verification->pan_card = $request->file('pan_card')
-                ->store('verifications', 'public');
-        }
-
-        if ($request->filled('status')) {
-
-            $verification->status = $request->status;
-
-            if ($request->status == 'approved') {
-                $verification->verified_at = now();
-            }
-
-        }
-
-        if ($request->filled('remarks')) {
-            $verification->remarks = $request->remarks;
-        }
-
-        $verification->save();
-
+    if (!$verification) {
         return response()->json([
-            'success' => true,
-            'message' => 'Verification updated successfully',
-            'data' => $verification
-        ]);
+            'success' => false,
+            'message' => 'Verification not found'
+        ], 404);
     }
 
+    // Store old status
+    $oldStatus = $verification->status;
+
+    $validator = Validator::make($request->all(), [
+
+        'full_name' => 'nullable|string|max:255',
+
+        'citizenship_front' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
+
+        'citizenship_back' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
+
+        'pan_card' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
+
+        'status' => 'nullable|in:pending,approved,rejected',
+
+        'remarks' => 'nullable|string',
+
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    if ($request->filled('full_name')) {
+        $verification->full_name = $request->full_name;
+    }
+
+    if ($request->hasFile('citizenship_front')) {
+
+        if ($verification->citizenship_front) {
+            Storage::disk('public')->delete($verification->citizenship_front);
+        }
+
+        $verification->citizenship_front = $request->file('citizenship_front')
+            ->store('verifications', 'public');
+    }
+
+    if ($request->hasFile('citizenship_back')) {
+
+        if ($verification->citizenship_back) {
+            Storage::disk('public')->delete($verification->citizenship_back);
+        }
+
+        $verification->citizenship_back = $request->file('citizenship_back')
+            ->store('verifications', 'public');
+    }
+
+    if ($request->hasFile('pan_card')) {
+
+        if ($verification->pan_card) {
+            Storage::disk('public')->delete($verification->pan_card);
+        }
+
+        $verification->pan_card = $request->file('pan_card')
+            ->store('verifications', 'public');
+    }
+
+    if ($request->filled('status')) {
+
+        $verification->status = $request->status;
+
+        if ($request->status == 'approved') {
+            $verification->verified_at = now();
+        } else {
+            $verification->verified_at = null;
+        }
+    }
+
+    if ($request->filled('remarks')) {
+        $verification->remarks = $request->remarks;
+    }
+
+    $verification->save();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Send Notification
+    |--------------------------------------------------------------------------
+    */
+    if ($oldStatus != $verification->status) {
+
+        $title = '';
+        $message = '';
+
+        if ($verification->status == 'approved') {
+
+            $title = 'Verification Approved';
+            $message = 'Congratulations! Your identity verification has been approved.';
+
+        } elseif ($verification->status == 'rejected') {
+
+            $title = 'Verification Rejected';
+            $message = 'Your identity verification has been rejected. Please check the remarks and submit again.';
+
+        }
+
+        if ($title != '') {
+
+            // Save notification to database
+            NotificationModel::create([
+                'user_id' => $verification->user_id,
+                'title' => $title,
+                'message' => $message
+            ]);
+
+            // Send Push Notification
+            try {
+
+                $user = UserModel::find($verification->user_id);
+
+                if ($user && !empty($user->fcm_token)) {
+
+                    app(FCMService::class)->sendNotification(
+                        $user->fcm_token,
+                        $title,
+                        $message
+                    );
+
+                }
+
+            } catch (\Exception $e) {
+
+                Log::error('Verification Notification Error: ' . $e->getMessage());
+
+            }
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Verification updated successfully',
+        'data' => $verification
+    ]);
+}
     // Delete verification
     public function destroy($id)
     {

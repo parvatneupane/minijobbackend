@@ -1,6 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\NotificationModel;
+use App\Models\UserModel;
+use App\Services\FCMService;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\PaymentModel;
 use App\Models\FreeLancerProfileModel;
@@ -192,14 +196,14 @@ public function release($id)
         return response()->json([
             'success' => false,
             'message' => 'Payment not found.'
-        ],404);
+        ], 404);
     }
 
     if ($payment->status != 'escrow') {
         return response()->json([
             'success' => false,
             'message' => 'Payment is not in escrow.'
-        ],400);
+        ], 400);
     }
 
     // Release payment
@@ -207,7 +211,7 @@ public function release($id)
     $payment->released_at = now();
     $payment->save();
 
-    // Find freelancer profile
+    // Update freelancer profile
     $profile = FreeLancerProfileModel::where(
         'user_id',
         $payment->freelancer_id
@@ -215,13 +219,45 @@ public function release($id)
 
     if ($profile) {
 
-        $profile->earned_money =
-            $profile->earned_money + $payment->freelancer_amount;
-
-        $profile->completed_jobs =
-            $profile->completed_jobs + 1;
-
+        $profile->earned_money += $payment->freelancer_amount;
+        $profile->completed_jobs += 1;
         $profile->save();
+    }
+
+    // ===========================
+    // Save Notification
+    // ===========================
+    NotificationModel::create([
+        'user_id' => $payment->freelancer_id,
+        'title' => 'Payment Released',
+        'message' => 'Congratulations! Rs. ' .
+            $payment->freelancer_amount .
+            ' has been released to your account.'
+    ]);
+
+    // ===========================
+    // Send Push Notification
+    // ===========================
+    try {
+
+        $freelancer = UserModel::find($payment->freelancer_id);
+
+        if ($freelancer && !empty($freelancer->fcm_token)) {
+
+            app(FCMService::class)->sendNotification(
+                $freelancer->fcm_token,
+                'Payment Released and work mark as completed',
+                'Congratulations! Rs. ' .
+                $payment->freelancer_amount .
+                ' has been released to your account.'
+            );
+
+        }
+
+    } catch (\Exception $e) {
+
+        Log::error('FCM Payment Release Error: ' . $e->getMessage());
+
     }
 
     return response()->json([
@@ -234,35 +270,68 @@ public function release($id)
     /**
      * Refund Payment
      */
-    public function refund($id)
-    {
-        $payment = PaymentModel::find($id);
+public function refund($id)
+{
+    $payment = PaymentModel::find($id);
 
-        if(!$payment){
+    if (!$payment) {
 
-            return response()->json([
-                'success'=>false,
-                'message'=>'Payment not found.'
-            ],404);
+        return response()->json([
+            'success' => false,
+            'message' => 'Payment not found.'
+        ], 404);
+
+    }
+
+    $payment->status = 'refunded';
+    $payment->save();
+
+    // ===========================
+    // Save Notification
+    // ===========================
+    NotificationModel::create([
+        'user_id' => $payment->client_id,
+        'title' => 'Payment Refunded',
+        'message' => 'Your payment of Rs. ' .
+            $payment->amount .
+            ' has been refunded successfully.'
+    ]);
+
+    // ===========================
+    // Send Push Notification
+    // ===========================
+    try {
+
+        $client = UserModel::find($payment->client_id);
+
+        if ($client && !empty($client->fcm_token)) {
+
+            app(FCMService::class)->sendNotification(
+                $client->fcm_token,
+                'Payment Refunded',
+                'Your payment of Rs. ' .
+                $payment->amount .
+                ' has been refunded successfully.'
+            );
 
         }
 
-        $payment->update([
+    } catch (\Exception $e) {
 
-            'status'=>'refunded'
+        Log::error('FCM Refund Error: ' . $e->getMessage());
 
-        ]);
-
-        return response()->json([
-
-            'success'=>true,
-
-            'message'=>'Payment refunded.',
-
-            'data'=>$payment
-
-        ]);
     }
+
+    return response()->json([
+
+        'success' => true,
+
+        'message' => 'Payment refunded.',
+
+        'data' => $payment
+
+    ]);
+}
 
     /**
      * Delete Payment
