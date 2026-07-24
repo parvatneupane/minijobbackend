@@ -8,121 +8,117 @@ use Illuminate\Support\Facades\Log;
 use App\Models\VerificationModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class VerificationController extends Controller
 {
-    // Get all verifications
-    public function index()
+
+    // Show all verification records
+    public function viewIndex()
     {
         $verifications = VerificationModel::with('user')->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Verifications fetched successfully',
-            'data' => $verifications
-        ]);
+        return view('admin.verifications.index', compact('verifications'));
     }
 
-    // Create verification
+
+    // Create page
+    public function create()
+    {
+        return view('admin.verifications.create');
+    }
+
+
+    // Store verification
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
 
-            'user_id' => 'required|exists:users,id|unique:verifications,user_id',
-
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
             'full_name' => 'required|string|max:255',
 
-            'citizenship_front' => 'required|image|mimes:jpg,jpeg,png|max:4096',
+            'citizenship_front' => 'required|image',
+            'citizenship_back' => 'required|image',
+            'pan_card' => 'nullable|image',
+        ]);
 
-            'citizenship_back' => 'required|image|mimes:jpg,jpeg,png|max:4096',
 
-            'pan_card' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
+        $front = $request->file('citizenship_front')
+            ->store('verifications','public');
+
+
+        $back = $request->file('citizenship_back')
+            ->store('verifications','public');
+
+
+        $pan = null;
+
+        if($request->hasFile('pan_card'))
+        {
+            $pan = $request->file('pan_card')
+                ->store('verifications','public');
+        }
+
+
+        VerificationModel::create([
+
+            'user_id'=>$request->user_id,
+
+            'full_name'=>$request->full_name,
+
+            'citizenship_front'=>$front,
+
+            'citizenship_back'=>$back,
+
+            'pan_card'=>$pan,
+
+            'status'=>'pending'
 
         ]);
 
-        if ($validator->fails()) {
 
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+        return redirect()
+            ->route('admin.verifications.index')
+            ->with('success','Verification created successfully');
 
-        }
-
-        $frontPath = $request->file('citizenship_front')
-            ->store('verifications', 'public');
-
-        $backPath = $request->file('citizenship_back')
-            ->store('verifications', 'public');
-
-        $panPath = null;
-
-        if ($request->hasFile('pan_card')) {
-
-            $panPath = $request->file('pan_card')
-                ->store('verifications', 'public');
-
-        }
-
-        $verification = VerificationModel::create([
-
-            'user_id' => $request->user_id,
-
-            'full_name' => $request->full_name,
-
-            'citizenship_front' => $frontPath,
-
-            'citizenship_back' => $backPath,
-
-            'pan_card' => $panPath,
-
-            'status' => 'pending'
-
-        ]);
-
-        return response()->json([
-
-            'success' => true,
-
-            'message' => 'Verification submitted successfully',
-
-            'data' => $verification
-
-        ], 201);
     }
 
-    // Get single verification
-public function show($userId)
-{
-    $verification = VerificationModel::where('user_id', $userId)->first();
 
-    if (!$verification) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Verification not found'
-        ], 404);
+
+    // Show single verification
+    public function show($id)
+    {
+
+        $verification = VerificationModel::with('user')
+            ->findOrFail($id);
+
+
+        return view(
+            'admin.verifications.show',
+            compact('verification')
+        );
+
     }
 
-    return response()->json([
-        'success' => true,
-        'data' => [
-            'id' => $verification->id,
-            'user_id' => $verification->user_id,
-            'full_name' => $verification->full_name,
 
-            'citizenship_front' => asset('storage/' . $verification->citizenship_front),
-            'citizenship_back' => asset('storage/' . $verification->citizenship_back),
-            'pan_card' => asset('storage/' . $verification->pan_card),
 
-            'status' => $verification->status,
-            'remarks' => $verification->remarks,
-            'verified_at' => $verification->verified_at,
-            'created_at' => $verification->created_at,
-            'updated_at' => $verification->updated_at,
-        ]
-    ]);
-}
+
+    // Edit page
+    public function edit($id)
+    {
+
+        $verification = VerificationModel::findOrFail($id);
+
+
+        return view(
+            'admin.verifications.edit',
+            compact('verification')
+        );
+
+    }
+
+
+
+
 
     // Update verification
 public function update(Request $request, $id)
@@ -276,34 +272,41 @@ public function update(Request $request, $id)
     // Delete verification
     public function destroy($id)
     {
-        $verification = VerificationModel::find($id);
 
-        if (!$verification) {
+        $verification = VerificationModel::findOrFail($id);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Verification not found'
-            ], 404);
 
+
+        if($verification->citizenship_front)
+        {
+            Storage::disk('public')
+            ->delete($verification->citizenship_front);
         }
 
-        if ($verification->citizenship_front) {
-            Storage::disk('public')->delete($verification->citizenship_front);
+
+        if($verification->citizenship_back)
+        {
+            Storage::disk('public')
+            ->delete($verification->citizenship_back);
         }
 
-        if ($verification->citizenship_back) {
-            Storage::disk('public')->delete($verification->citizenship_back);
+
+        if($verification->pan_card)
+        {
+            Storage::disk('public')
+            ->delete($verification->pan_card);
         }
 
-        if ($verification->pan_card) {
-            Storage::disk('public')->delete($verification->pan_card);
-        }
+
 
         $verification->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Verification deleted successfully'
-        ]);
+
+
+        return redirect()
+            ->route('admin.verifications.index')
+            ->with('success','Verification deleted');
+
     }
+
 }
