@@ -1,7 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\NotificationModel;
+use App\Models\UserModel;
+use App\Services\FCMService;
+use Illuminate\Support\Facades\Log;
 use App\Models\ReviewModel;
 use App\Models\FreeLancerProfileModel;
 use Illuminate\Http\Request;
@@ -37,80 +40,117 @@ class ReviewController extends Controller
     /**
      * Store Review
      */
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
+public function store(Request $request)
+{
+    $validator = Validator::make($request->all(), [
 
-            'contract_id' => 'required|exists:contracts,id',
+        'contract_id' => 'required|exists:contracts,id',
 
-            'task_id' => 'required|exists:tasks,id',
+        'task_id' => 'required|exists:tasks,id',
 
-            'client_id' => 'required|exists:users,id',
+        'client_id' => 'required|exists:users,id',
 
-            'freelancer_id' => 'required|exists:users,id',
+        'freelancer_id' => 'required|exists:users,id',
 
-            'rating' => 'required|integer|min:1|max:5',
+        'rating' => 'required|integer|min:1|max:5',
 
-            'review' => 'required|string',
+        'review' => 'required|string',
 
-            'recommended' => 'nullable|boolean'
+        'recommended' => 'nullable|boolean'
 
-        ]);
+    ]);
 
-        if ($validator->fails()) {
-
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-
-        }
-
-        // Prevent duplicate review
-        $exists = ReviewModel::where('contract_id', $request->contract_id)
-            ->where('client_id', $request->client_id)
-            ->first();
-
-        if ($exists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You have already reviewed this freelancer.'
-            ], 409);
-        }
-
-        $review = ReviewModel::create([
-
-            'contract_id' => $request->contract_id,
-
-            'task_id' => $request->task_id,
-
-            'client_id' => $request->client_id,
-
-            'freelancer_id' => $request->freelancer_id,
-
-            'rating' => $request->rating,
-
-            'review' => $request->review,
-
-            'recommended' => $request->recommended ?? false
-
-        ]);
-
-        // Update freelancer average rating
-        $avgRating = ReviewModel::where('freelancer_id', $request->freelancer_id)
-            ->avg('rating');
-
-        FreeLancerProfileModel::where('user_id', $request->freelancer_id)
-            ->update([
-                'rating' => round($avgRating, 2)
-            ]);
+    if ($validator->fails()) {
 
         return response()->json([
-            'success' => true,
-            'message' => 'Review submitted successfully.',
-            'data' => $review
-        ], 201);
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
+
     }
+
+    // Prevent duplicate review
+    $exists = ReviewModel::where('contract_id', $request->contract_id)
+        ->where('client_id', $request->client_id)
+        ->first();
+
+    if ($exists) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You have already reviewed this freelancer.'
+        ], 409);
+    }
+
+    $review = ReviewModel::create([
+
+        'contract_id' => $request->contract_id,
+
+        'task_id' => $request->task_id,
+
+        'client_id' => $request->client_id,
+
+        'freelancer_id' => $request->freelancer_id,
+
+        'rating' => $request->rating,
+
+        'review' => $request->review,
+
+        'recommended' => $request->recommended ?? false
+
+    ]);
+
+    // Update freelancer average rating
+    $avgRating = ReviewModel::where('freelancer_id', $request->freelancer_id)
+        ->avg('rating');
+
+    FreeLancerProfileModel::where('user_id', $request->freelancer_id)
+        ->update([
+            'rating' => round($avgRating, 2)
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Send Notification to Freelancer
+    |--------------------------------------------------------------------------
+    */
+
+    $title = "New Review Received";
+    $message = "A client rated you {$request->rating}/5 stars and left a review.";
+
+    // Save notification
+    NotificationModel::create([
+        'user_id' => $request->freelancer_id,
+        'title' => $title,
+        'message' => $message
+    ]);
+
+    // Send Push Notification
+    try {
+
+        $user = UserModel::find($request->freelancer_id);
+
+        if ($user && !empty($user->fcm_token)) {
+
+            app(FCMService::class)->sendNotification(
+                $user->fcm_token,
+                $title,
+                $message
+            );
+
+        }
+
+    } catch (\Exception $e) {
+
+        Log::error('Review Notification Error: ' . $e->getMessage());
+
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Review submitted successfully.',
+        'data' => $review
+    ], 201);
+}
 
     /**
      * Show Single Review

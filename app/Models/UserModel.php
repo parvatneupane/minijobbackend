@@ -17,7 +17,7 @@ class UserModel extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'profile_image',
+        'fcm_token',
         'password',
         'role',
         'status',
@@ -122,6 +122,22 @@ public function withdrawals()
     return $this->hasMany(
         WithdrawalModel::class,
         'user_id'
+    );
+}
+
+public function raisedConflicts()
+{
+    return $this->hasMany(
+        ConflictModel::class,
+        'raised_by'
+    );
+}
+
+public function receivedConflicts()
+{
+    return $this->hasMany(
+        ConflictModel::class,
+        'against_user'
     );
 }
 

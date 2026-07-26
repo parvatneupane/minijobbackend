@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('required_skills');
             $table->string('min_experience');
              $table->integer('budget');
-            $table->enum('status', ['open', 'in_progress', 'completed', 'cancelled'])->default('open');
+            $table->enum('status', ['open', 'in_progress', 'under_review', 'completed', 'cancelled'])->default('open');
             $table->timestamps();
         });
     }
