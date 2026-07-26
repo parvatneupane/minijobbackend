@@ -32,8 +32,8 @@
         <section class="stats-grid">
             <div class="stat-card">
                 <div class="label">Total Users</div>
-                <div class="value">2,847</div>
-                <div class="change up"><i class="fas fa-arrow-up"></i> +12.4%</div>
+                <div class="value">{{ number_format($totalUsers) }}</div>
+                <div class="change up"><i class="fas fa-arrow-up"></i></div>
             </div>
             <div class="stat-card">
                 <div class="label">Active Tasks</div>
@@ -52,7 +52,7 @@
             </div>
             <div class="stat-card">
                 <div class="label">Pending Verifications</div>
-                <div class="value">27</div>
+                <div class="value">{{ number_format($pendingVerifications) }}</div>
                 <div class="change down"><i class="fas fa-arrow-down"></i> -3.2%</div>
             </div>
             <div class="stat-card">

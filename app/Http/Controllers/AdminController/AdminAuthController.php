@@ -5,7 +5,7 @@ namespace App\Http\Controllers\AdminController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Session;
 class AdminAuthController extends Controller
 {
     /**
@@ -67,13 +67,17 @@ class AdminAuthController extends Controller
      * Logout
      */
     public function logout(Request $request)
-    {
-        Auth::logout();
-
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
-
-        return redirect('welcome');
+{
+    // If impersonating, clear session
+    if (Session::has('impersonator_id')) {
+        Session::forget(['impersonator_id', 'is_impersonating']);
     }
+
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/welcome');
+}
+
 }
