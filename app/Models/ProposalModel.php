@@ -50,4 +50,18 @@ class ProposalModel extends Model
         'proposal_id'
     );
 }
+
+
+public function freelancer()
+{
+    return $this->belongsTo(
+        UserModel::class,
+        'user_id'
+    );
+
+
+
+}
+
+
 }

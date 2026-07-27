@@ -31,6 +31,14 @@ class TaskModel extends Model
         ];
     }
 
+ public function client()
+    {
+        return $this->belongsTo(
+            UserModel::class,
+            'user_id'
+        );
+    }
+    
     public function user()
     {
         return $this->belongsTo(
@@ -47,7 +55,7 @@ class TaskModel extends Model
         );
     }
 
-    public function contract()
+    public function contracts()
 {
     return $this->hasOne(
         ContractModel::class,
@@ -55,6 +63,13 @@ class TaskModel extends Model
     );
 }
 
+public function proposals()
+{
+    return $this->hasMany(
+        ProposalModel::class,
+        'task_id'
+    );
 
+}
 
 }

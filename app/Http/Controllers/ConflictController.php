@@ -9,6 +9,7 @@ use App\Models\UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class ConflictController extends Controller
 {
@@ -177,7 +178,7 @@ class ConflictController extends Controller
 
         } catch (\Exception $e) {
 
-            \Log::error($e->getMessage());
+            Log::error($e->getMessage());
 
         }
 
@@ -332,7 +333,7 @@ public function update(Request $request, $id)
 
     } catch (\Exception $e) {
 
-        \Log::error($e->getMessage());
+        Log::error($e->getMessage());
 
     }
 

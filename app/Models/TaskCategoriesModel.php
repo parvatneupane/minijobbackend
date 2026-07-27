@@ -32,4 +32,11 @@ class TaskCategoriesModel extends Model
         'free_lancer_profile_id'
     );
 }
+
+    public function tasks()
+    {
+        return $this->hasMany(TaskModel::class, 'category_id');
+    }
+
+
 }

@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
             ['email' => 'admin@gmail.com'],
             [
                 'name' => 'System Admin',
-                'profileimage' => null,
+       
                 'password' => Hash::make('admin123'),
                 'role' => 'admin',
                 'status' => 'active',
@@ -29,7 +29,7 @@ class UserSeeder extends Seeder
             ['email' => 'user@gmail.com'],
             [
                 'name' => 'Demo Client',
-                'profileimage' => null,
+              
                 'password' => Hash::make('client123'),
                 'role' => 'client',
                 'status' => 'active',
@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
             ['email' => 'free@gmail.com'],
             [
                 'name' => 'Demo Freelancer',
-                'profileimage' => null,
+          
                 'password' => Hash::make('freelancer123'),
                 'role' => 'freelancer',
                 'status' => 'active',

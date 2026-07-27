@@ -69,33 +69,11 @@
 </form>
 
         </div>
-    </aside>
-@if(session('is_impersonating'))
 
-<div style="
-background:#f59e0b;
-padding:12px;
-text-align:center;
-color:white;
-font-weight:bold;
-">
-
-You are logged in as another user.
-
-<a href="/admin/stop-impersonate"
-style="
-color:white;
-text-decoration:underline;
-margin-left:15px;
-">
-
-Return to Admin
-
-</a>
 
 </div>
 
-@endif
+
 
     <main class="main">
         @yield('content')

@@ -82,12 +82,34 @@ class ContractModel extends Model
     );
 }
 
-public function payment()
+public function payments()
 {
-    return $this->hasOne(
+    return $this->hasMany(
         PaymentModel::class,
         'contract_id'
     );
 }
+
+public function review()
+{
+    return $this->hasOne(
+        ReviewModel::class,
+        'contract_id'
+    );
+
+}
+
+
+public function conflicts()
+{
+    return $this->hasMany(
+        ConflictModel::class,
+        'contract_id'
+    );  
+
+}
+
+
+   
 
 }

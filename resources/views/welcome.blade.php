@@ -190,41 +190,18 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <span class="logo-icon">💼</span>
-        <h1>MiniJob</h1>
-        <p class="subtitle">Find &amp; Hire Freelancers</p>
+ <div class="container">
+    <span class="logo-icon">💼</span>
+    <h1>MiniJob</h1>
+    <p class="subtitle">Find &amp; Hire Freelancers</p>
 
-        @guest
-            <div class="button-group">
-                <a href="{{ route('login') }}" class="btn btn-primary">🔑 Login</a>
-                <a href="{{ route('register') }}" class="btn btn-secondary">📝 Create Account</a>
-            </div>
-        @else
-            <div class="user-info">
-                <span class="user-name">👋 {{ auth()->user()->name }}</span>
-                <span class="user-role {{ auth()->user()->role == 'admin' ? 'admin' : '' }}">
-                    {{ auth()->user()->role }}
-                </span>
-            </div>
-
-            <div class="button-group">
-                @if(auth()->user()->role == 'admin')
-                    <a href="{{ url('admin/dashboard') }}" class="btn btn-admin"> Admin Dashboard</a>
-                @else
-                    <a href="{{ url('users/dashboard') }}" class="btn btn-dashboard">📊 Dashboard</a>
-                @endif
-                
-                <a href="{{ url('logout') }}" 
-                   class="btn btn-logout"
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                    🚪 Logout
-                </a>
-                <form id="logout-form" action="{{ url('logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-            </div>
-        @endguest
-    </div>
+    @guest
+        <div class="button-group">
+            <a href="{{ route('login') }}" class="btn btn-primary">
+                🔑 Login
+            </a>
+        </div>
+    @endguest
+</div>
 </body>
 </html>
