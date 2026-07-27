@@ -8,7 +8,7 @@
     <div class="bg-white rounded-xl shadow-sm border p-5 md:col-span-2">
         <h2 class="font-semibold text-lg mb-2">{{ $conflict->title }}</h2>
         <p class="text-sm text-gray-500 mb-3">
-            Raised by {{ $conflict->raisedBy->name ?? '—' }} ({{ $conflict->raised_by_role }})
+            Raised by {{ $conflict->raisedByUser->name ?? '—' }} ({{ $conflict->raised_by_role }})
             against {{ $conflict->againstUser->name ?? '—' }}
             &middot; Task: {{ $conflict->contract->task->title ?? '—' }}
         </p>
@@ -38,23 +38,66 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border p-5">
-        <h3 class="font-semibold mb-3">Resolve</h3>
-        <form method="POST" action="{{ route('admin.conflicts.update', $conflict) }}" class="space-y-4">
-            @csrf @method('PUT')
+    <h3 class="font-semibold mb-4">Dispute Resolution</h3>
+
+    <form method="POST" action="{{ route('admin.conflicts.update', $conflict) }}">
+        @csrf
+        @method('PUT')
+
+        <div class="space-y-4">
+
             <div>
-                <label class="text-sm text-gray-600">Status</label>
-                <select name="status" class="border rounded-lg px-3 py-2 w-full text-sm">
-                    @foreach(['open','in_review','resolved','rejected'] as $s)
-                        <option value="{{ $s }}" @selected($conflict->status==$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>
-                    @endforeach
+                <label class="text-sm text-gray-600">Conflict Status</label>
+                <select name="status" class="border rounded-lg w-full px-3 py-2">
+                    <option value="open" @selected($conflict->status=='open')>Open</option>
+                    <option value="in_review" @selected($conflict->status=='in_review')>In Review</option>
+                    <option value="resolved" @selected($conflict->status=='resolved')>Resolved</option>
+                    <option value="rejected" @selected($conflict->status=='rejected')>Rejected</option>
                 </select>
             </div>
+
             <div>
-                <label class="text-sm text-gray-600">Admin Response</label>
-                <textarea name="admin_response" rows="4" class="border rounded-lg px-3 py-2 w-full text-sm">{{ $conflict->admin_response }}</textarea>
+                <label class="text-sm text-gray-600">
+                    Decision
+                </label>
+
+                <select
+                    name="payment_action"
+                    class="border rounded-lg w-full px-3 py-2">
+
+                    <option value="">Keep Payment in Escrow</option>
+
+                    <option value="release">
+                        ✅ Release Payment to Freelancer
+                    </option>
+
+                    <option value="refund">
+                        ↩ Refund Payment to Client
+                    </option>
+
+                </select>
             </div>
-            <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm w-full">Save Decision</button>
-        </form>
-    </div>
+
+            <div>
+                <label class="text-sm text-gray-600">
+                    Admin Response
+                </label>
+
+                <textarea
+                    name="admin_response"
+                    rows="5"
+                    class="border rounded-lg w-full px-3 py-2">{{ $conflict->admin_response }}</textarea>
+            </div>
+
+            <button
+                class="bg-indigo-600 text-white rounded-lg px-4 py-2 w-full">
+                Save Resolution
+            </button>
+
+        </div>
+
+    </form>
+</div>
+
 </div>
 @endsection
